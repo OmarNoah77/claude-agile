@@ -1,0 +1,8 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "bash -c 'echo \"=== Claude Agile (ccpm layer) ===\"; if [ -f .claude-agile/config.json ]; then echo \"Methodology: $(cat .claude-agile/config.json | grep methodology | cut -d\\\"\\\" -f4)\"; echo \"\"; fi; if [ -f .claude/skills/ccpm/references/scripts/status.sh ]; then echo \"--- ccpm Status ---\"; bash .claude/skills/ccpm/references/scripts/status.sh 2>/dev/null || echo \"ccpm status: no active epics\"; echo \"\"; elif [ -d .claude/skills/ccpm ]; then echo \"ccpm: installed (no status script found)\"; echo \"\"; else echo \"ccpm: NOT INSTALLED -- run: git clone https://github.com/automazeio/ccpm.git && ln -s ccpm/skill/ccpm .claude/skills/ccpm\"; echo \"\"; fi; if [ -f SPRINT.md ]; then echo \"--- Sprint ---\"; head -15 SPRINT.md; echo \"\"; fi; if [ -f DAILY.md ]; then echo \"--- Recent Activity ---\"; tail -20 DAILY.md; fi'"
+    }
+  ]
+}
