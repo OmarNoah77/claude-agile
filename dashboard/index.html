@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-agile | Dashboard</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a12;
+  --bg-card: #12121e;
+  --bg-card-hover: #1a1a2e;
+  --bg-input: #0e0e1a;
+  --border: #1e1e30;
+  --text: #e0e0e8;
+  --text-dim: #7a7a8c;
+  --text-bright: #fff;
+  --accent: #6366f1;
+  --accent-dim: #4f46e5;
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --orange: #f97316;
+  --blue: #3b82f6;
+  --purple: #8b5cf6;
+  --radius: 8px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+
+/* ─── Layout ─────────────────────────────────────────── */
+.app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: 32px 48px 28px 1fr; height: 100vh; }
+
+/* ─── Workspace Tabs ────────────────────────────────────── */
+.workspace-tabs {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 0;
+  background: #06060c; border-bottom: 1px solid var(--border);
+  padding: 0 12px; overflow-x: auto;
+}
+.workspace-tabs::-webkit-scrollbar { display: none; }
+.ws-tab {
+  padding: 6px 16px; font-size: 11px; font-family: var(--mono);
+  color: var(--text-dim); cursor: pointer; border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: all 0.15s; background: none; border-top: none;
+  border-left: none; border-right: none;
+}
+.ws-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.ws-tab:hover:not(.active) { color: var(--text); }
+.ws-tab-add {
+  padding: 4px 10px; font-size: 13px; color: var(--text-dim); cursor: pointer;
+  background: none; border: 1px solid var(--border); border-radius: 4px;
+  margin-left: 6px; line-height: 1;
+}
+.ws-tab-add:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ─── Module Sub-Tabs ───────────────────────────────────── */
+.module-tabs {
+  grid-column: 1 / -1; display: flex; align-items: center; gap: 0;
+  background: var(--bg); border-bottom: 1px solid var(--border);
+  padding: 0 20px; overflow-x: auto;
+}
+.module-tabs::-webkit-scrollbar { display: none; }
+.mod-tab {
+  padding: 5px 12px; font-size: 10px; font-family: var(--mono);
+  color: var(--text-dim); cursor: pointer; border-bottom: 2px solid transparent;
+  white-space: nowrap; transition: all 0.15s; background: none;
+  border-top: none; border-left: none; border-right: none;
+  text-transform: lowercase;
+}
+.mod-tab.active { color: var(--green); border-bottom-color: var(--green); }
+.mod-tab:hover:not(.active) { color: var(--text); }
+.mod-tab-add {
+  padding: 3px 8px; font-size: 11px; color: var(--text-dim); cursor: pointer;
+  background: none; border: 1px solid var(--border); border-radius: 3px;
+  margin-left: 6px; line-height: 1;
+}
+.mod-tab-add:hover { color: var(--green); border-color: var(--green); }
+
+/* ─── Header ─────────────────────────────────────────── */
+.header {
+  grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 20px; border-bottom: 1px solid var(--border); background: var(--bg-card);
+}
+.header-left { display: flex; align-items: center; gap: 14px; }
+.logo { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+.logo span { color: var(--text-dim); font-weight: 400; }
+.methodology-badge {
+  font-size: 10px; padding: 2px 8px; border-radius: 10px;
+  background: rgba(99,102,241,0.15); color: var(--accent);
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.header-right { display: flex; align-items: center; gap: 10px; }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0.2; } }
+
+/* ─── Pipeline Status Bar ───────────────────────────── */
+.pipeline-bar {
+  display: none; align-items: center; gap: 10px; padding: 8px 20px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+  background: rgba(99,102,241,0.05); font-size: 11px;
+}
+.pipeline-bar.active { display: flex; }
+.pipeline-indicator {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+  animation: blink 1.2s ease-in-out infinite; flex-shrink: 0;
+}
+.pipeline-phase {
+  font-family: var(--mono); font-weight: 700; color: var(--accent);
+  text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px;
+}
+.pipeline-task { color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pipeline-meta { color: var(--text-dim); font-family: var(--mono); font-size: 10px; }
+
+/* ─── Active card indicator ─────────────────────────── */
+.card-active { border-left: 3px solid var(--accent); }
+.card-active::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); animation: blink 1.2s ease-in-out infinite;
+  margin-right: 6px; vertical-align: middle;
+}
+
+/* ─── Main ───────────────────────────────────────────── */
+.main { display: flex; flex-direction: column; overflow-y: auto; border-right: 1px solid var(--border); }
+
+/* ─── Info Bars ──────────────────────────────────────── */
+.info-bar {
+  display: flex; align-items: center; gap: 14px; padding: 8px 20px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0; flex-wrap: wrap;
+  font-size: 11px;
+}
+.info-divider { width: 1px; height: 20px; background: var(--border); }
+
+/* ─── Kanban ─────────────────────────────────────────── */
+.kanban { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; flex: 1; min-height: 0; overflow: hidden; }
+.kanban-col { display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+.kanban-col:last-child { border-right: none; }
+.col-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.col-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); }
+.col-count {
+  font-family: var(--mono); font-size: 10px; padding: 1px 6px; border-radius: 8px;
+  background: rgba(255,255,255,0.06); color: var(--text-dim);
+}
+.col-cards { padding: 10px; overflow-y: auto; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.card {
+  padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); font-size: 12px; color: var(--text);
+  transition: border-color 0.15s; position: relative;
+}
+.card:hover { border-color: var(--border-active, #3b3b5c); }
+.card-sp { font-family: var(--mono); font-size: 10px; color: var(--accent); margin-left: 6px; }
+.card-priority { font-family: var(--mono); font-size: 9px; font-weight: 700; margin-right: 4px; padding: 1px 4px; border-radius: 3px; }
+.card-priority-P0 { background: rgba(239,68,68,0.15); color: var(--red); }
+.card-priority-P1 { background: rgba(249,115,22,0.15); color: var(--orange); }
+.card-priority-P2 { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.card-priority-P3 { background: rgba(99,102,241,0.15); color: var(--accent); }
+.card-sprint { font-family: var(--mono); font-size: 9px; color: var(--text-dim); display: block; margin-top: 3px; }
+.card-blocked { border-left: 3px solid var(--red); }
+.card-empty { color: var(--text-dim); font-style: italic; font-size: 11px; padding: 20px 10px; text-align: center; }
+.sprint-group { margin-bottom: 4px; }
+.sprint-divider {
+  font-size: 10px; font-weight: 700; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 6px 4px; border-bottom: 1px solid var(--border);
+  cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none;
+}
+.sprint-divider:hover { color: var(--text); }
+.sprint-arrow { font-size: 8px; transition: transform 0.15s; }
+.sprint-group.collapsed .sprint-arrow { transform: rotate(-90deg); }
+.sprint-group.collapsed .sprint-cards { display: none; }
+.sprint-count { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-left: auto; opacity: 0.6; }
+
+/* ─── Bottom Panels (sticky) ─────────────────────────── */
+.bottom-panels {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+  border-top: 1px solid var(--border); height: 200px;
+  flex-shrink: 0;
+}
+.chart-panel { padding: 12px 16px; border-right: 1px solid var(--border); overflow-y: auto; }
+.chart-panel:last-child { border-right: none; }
+.chart-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 10px; }
+
+/* ─── Agent Activity Panel ───────────────────────────── */
+.agent-idle { color: var(--text-dim); font-size: 11px; font-style: italic; padding: 20px 0; text-align: center; }
+.agent-live { font-size: 11px; }
+.agent-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.agent-role-name { font-weight: 700; font-size: 12px; }
+.agent-phase-badge { font-family: var(--mono); font-size: 9px; padding: 2px 6px; border-radius: 6px; font-weight: 700; }
+.agent-task-title { color: var(--text); margin-bottom: 6px; font-size: 11px; }
+.agent-details { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+.agent-log { font-size: 10px; color: var(--text-dim); margin-top: 6px; max-height: 80px; overflow-y: auto; }
+.agent-log-entry { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+
+/* ─── Team Grid ──────────────────────────────────────── */
+.team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; }
+.role-card {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.role-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.role-name { font-size: 10px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.role-tag { font-family: var(--mono); font-size: 9px; color: var(--text-dim); margin-left: auto; }
+.role-standby { opacity: 0.4; }
+
+/* ─── Blockers ───────────────────────────────────────── */
+.blockers { border-top: 1px solid var(--border); padding: 12px 20px; }
+.blocker-item {
+  display: flex; align-items: center; gap: 8px; padding: 6px 0;
+  font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.blocker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+
+/* ─── Chat Panel ─────────────────────────────────────── */
+.chat-panel { display: flex; flex-direction: column; background: var(--bg-card); overflow: hidden; }
+.chat-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.chat-header-title { font-size: 12px; font-weight: 600; }
+.chat-channel { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+.chat-unavailable { font-size: 10px; color: var(--text-dim); font-style: italic; padding: 2px 8px; background: rgba(255,255,255,0.04); border-radius: 4px; }
+
+.chat-messages { flex: 1; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 8px; }
+
+.message { display: flex; gap: 8px; align-items: flex-start; padding: 6px 0; }
+.message.role-msg { border-left: 3px solid var(--msg-role-color, transparent); padding-left: 8px; margin-left: -8px; }
+.msg-avatar {
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.msg-avatar.user { background: rgba(59,130,246,0.2); color: var(--blue); }
+.msg-avatar.claude { background: rgba(218,119,86,0.2); color: #da7756; }
+.msg-avatar.codex { background: rgba(16,163,127,0.2); color: #10a37f; }
+.msg-avatar.system { background: rgba(255,255,255,0.06); color: var(--text-dim); }
+.msg-body { flex: 1; min-width: 0; }
+.msg-header { display: flex; align-items: baseline; gap: 6px; margin-bottom: 2px; }
+.msg-sender { font-size: 11px; font-weight: 600; color: var(--text); }
+.msg-role-badge { font-size: 8px; font-family: var(--mono); padding: 1px 5px; border-radius: 6px; font-weight: 700; letter-spacing: 0.5px; }
+.msg-time { font-size: 9px; color: var(--text-dim); }
+.msg-text { font-size: 12px; color: var(--text); line-height: 1.5; word-break: break-word; }
+.msg-text code { font-family: var(--mono); font-size: 11px; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px; }
+
+/* ─── Commands Panel ────────────────────────────────── */
+.commands-toggle { font-size: 9px; color: var(--text-dim); cursor: pointer; font-family: var(--mono); padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; }
+.commands-toggle:hover { border-color: var(--text-dim); color: var(--text); }
+.commands-panel { display: none; padding: 8px 14px; border-top: 1px solid var(--border); max-height: 140px; overflow-y: auto; }
+.commands-panel.open { display: block; }
+.cmd-item { display: flex; gap: 8px; padding: 3px 0; font-size: 10px; }
+.cmd-name { font-family: var(--mono); color: var(--accent); min-width: 80px; }
+.cmd-desc { color: var(--text-dim); }
+/* ─── Mention Autocomplete ──────────────────────────── */
+.mention-popup { position: absolute; bottom: 100%; left: 0; right: 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); max-height: 120px; overflow-y: auto; display: none; z-index: 10; }
+.mention-popup.open { display: block; }
+.mention-item { padding: 5px 10px; font-size: 11px; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.mention-item:hover { background: rgba(255,255,255,0.05); }
+.mention-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+.chat-input-area { padding: 10px 14px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.chat-input-wrap { display: flex; gap: 6px; align-items: flex-end; }
+.chat-input {
+  flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius);
+  color: var(--text); padding: 8px 10px; font-size: 12px; font-family: var(--font);
+  resize: none; min-height: 36px; max-height: 80px; outline: none;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-send {
+  background: var(--accent); color: white; border: none; border-radius: var(--radius);
+  padding: 8px 14px; font-size: 11px; font-weight: 600; cursor: pointer;
+}
+.chat-send:hover { background: var(--accent-dim); }
+.chat-send:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Role Selector ──────────────────────────────────── */
+.role-selector {
+  display: flex; gap: 4px; padding: 6px 14px; border-bottom: 1px solid var(--border);
+  overflow-x: auto; flex-shrink: 0;
+}
+.role-btn {
+  font-size: 9px; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-dim); cursor: pointer; white-space: nowrap;
+  font-family: var(--mono); transition: all 0.15s;
+}
+.role-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+.role-btn:hover:not(.active) { border-color: var(--text-dim); }
+
+/* ─── Health Metrics ─────────────────────────────────── */
+.hm { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.hm-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--text-bright); }
+.hm-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+.progress-wrap { display: flex; align-items: center; gap: 6px; min-width: 140px; }
+.progress-bg { flex: 1; height: 5px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s; }
+.progress-pct { font-family: var(--mono); font-size: 10px; color: var(--text-dim); min-width: 32px; text-align: right; }
+
+/* ─── Burndown Canvas ────────────────────────────────── */
+canvas { width: 100%; height: 160px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Workspace Tabs -->
+  <div class="workspace-tabs" id="workspace-tabs"></div>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <a href="http://localhost:4000" style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-decoration:none;padding:3px 8px;border:1px solid var(--border);border-radius:4px;" title="Back to Hub">HUB</a>
+      <div class="logo">CLAUDE-AGILE <span>dashboard</span></div>
+      <div class="methodology-badge" id="methodology">--</div>
+    </div>
+    <div class="header-right">
+      <div style="display:flex;align-items:center;gap:5px;">
+        <div class="status-dot"></div>
+        <span style="font-size:11px;color:var(--text-dim);">Live</span>
+      </div>
+      <span style="font-size:11px;color:var(--text);" id="project-name">--</span>
+    </div>
+  </header>
+
+  <!-- Module Sub-Tabs -->
+  <div class="module-tabs" id="module-tabs"></div>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- GitHub Bar -->
+    <div class="info-bar" id="github-bar">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" style="color:var(--text-dim);"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        <a id="gh-repo" href="#" target="_blank" style="font-family:var(--mono);font-size:11px;color:var(--accent);text-decoration:none;">--</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;color:var(--text-dim);">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12M18 9a3 3 0 100-6 3 3 0 000 6zM6 21a3 3 0 100-6 3 3 0 000 6zM18 9a9 9 0 01-9 9"/></svg>
+        <span id="gh-branch" style="color:var(--text);">--</span>
+      </div>
+      <div class="info-divider"></div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span id="gh-hash" style="font-family:var(--mono);color:var(--yellow);">--</span>
+        <span id="gh-msg" style="color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">--</span>
+        <span id="gh-time" style="color:var(--text-dim);">--</span>
+      </div>
+      <div class="info-divider"></div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="color:var(--text-dim);">PRs:</span>
+        <span id="gh-prs" style="font-family:var(--mono);color:var(--blue);">0</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px;">
+        <span style="color:var(--text-dim);">CI:</span>
+        <span id="gh-ci" style="font-family:var(--mono);">--</span>
+      </div>
+    </div>
+
+    <!-- Sprint Health Bar -->
+    <div class="info-bar" id="health-bar">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:180px;">
+        <span style="font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-dim);white-space:nowrap;">Meta:</span>
+        <span id="health-goal" style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Sin meta definida</span>
+      </div>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div class="hm"><div class="hm-val" id="hm-days">--</div><div class="hm-label">Dias rest.</div></div>
+        <div class="info-divider"></div>
+        <div class="hm"><div class="hm-val" id="hm-backlog">0</div><div class="hm-label">Backlog</div></div>
+        <div class="info-divider"></div>
+        <div class="hm"><div class="hm-val" id="hm-wip">0/2</div><div class="hm-label">WIP</div></div>
+        <div class="info-divider"></div>
+        <div class="hm"><div class="hm-val" id="hm-done">0</div><div class="hm-label">Done</div></div>
+        <div class="info-divider"></div>
+        <div class="hm"><div class="hm-val" id="hm-sp">0/0</div><div class="hm-label">SP</div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bg"><div class="progress-fill" id="progress-fill" style="width:0%;background:var(--green);"></div></div>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+    </div>
+
+    <!-- Pipeline Status -->
+    <div class="pipeline-bar" id="pipeline-bar">
+      <div class="pipeline-indicator"></div>
+      <span class="pipeline-phase" id="pl-phase">--</span>
+      <span class="pipeline-task" id="pl-task">--</span>
+      <span class="pipeline-meta" id="pl-meta"></span>
+    </div>
+
+    <!-- Kanban Board -->
+    <div class="kanban">
+      <div class="kanban-col">
+        <div class="col-header"><span class="col-title">Backlog</span><span class="col-count" id="cnt-backlog">0</span></div>
+        <div class="col-cards" id="cards-backlog"><div class="card-empty">Sin items</div></div>
+      </div>
+      <div class="kanban-col">
+        <div class="col-header"><span class="col-title">In Progress</span><span class="col-count" id="cnt-progress">0</span></div>
+        <div class="col-cards" id="cards-progress"><div class="card-empty">Sin items</div></div>
+      </div>
+      <div class="kanban-col">
+        <div class="col-header"><span class="col-title">Done</span><span class="col-count" id="cnt-done">0</span></div>
+        <div class="col-cards" id="cards-done"><div class="card-empty">Sin items</div></div>
+      </div>
+    </div>
+
+    <!-- Bottom: Team + Agent Activity (sticky) -->
+    <div class="bottom-panels">
+      <div class="chart-panel">
+        <div class="chart-title">Equipo</div>
+        <div class="team-grid" id="team-grid"></div>
+      </div>
+      <div class="chart-panel">
+        <div class="chart-title">Agente Activo</div>
+        <div id="agent-activity"><div class="agent-idle">Sin agente activo</div></div>
+      </div>
+    </div>
+
+    <!-- Blockers -->
+    <div class="blockers" id="blockers-section" style="display:none;">
+      <div class="chart-title" style="margin-bottom:8px;">Blockers</div>
+      <div id="blockers-list"></div>
+    </div>
+  </main>
+
+  <!-- Chat Panel -->
+  <aside class="chat-panel">
+    <div class="chat-header">
+      <span class="chat-header-title">Team Chat</span>
+      <span class="commands-toggle" onclick="toggleCommands()">/commands</span>
+      <span class="chat-channel">#claude-agile</span>
+    </div>
+    <div class="commands-panel" id="commands-panel"></div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="message">
+        <div class="msg-avatar system">S</div>
+        <div class="msg-body">
+          <div class="msg-header"><span class="msg-sender">Sistema</span></div>
+          <div class="msg-text">Conectado a <code>#claude-agile</code>. Tus mensajes llegan al equipo AI.</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-input-area" style="position:relative;">
+      <div class="mention-popup" id="mention-popup"></div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chat-input" placeholder="Escribe... usa @SM @TL @QA para dirigirte a un rol" rows="1" onkeydown="handleInputKeydown(event)" oninput="handleMentionInput(event)"></textarea>
+        <button class="chat-send" onclick="sendMessage()">Enviar</button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<script>
+// ─── Constants ──────────────────────────────────────────────
+const ROLES = [
+  { key: 'sm', name: 'Scrum Master', tag: '[SM]', color: '#a855f7' },
+  { key: 'tl', name: 'Tech Lead', tag: '[TL]', color: '#14b8a6' },
+  { key: 'dev', name: 'Developer', tag: '[DEV]', color: '#3b82f6' },
+  { key: 'qa', name: 'QA', tag: '[QA]', color: '#22c55e' },
+  { key: 'arch', name: 'Cloud Architect', tag: '[ARCH]', color: '#f97316' },
+  { key: 'devops', name: 'DevOps', tag: '[DEVOPS]', color: '#eab308' },
+  { key: 'dba', name: 'DBA', tag: '[DBA]', color: '#92400e' },
+  { key: 'obs', name: 'Observability', tag: '[OBS]', color: '#06b6d4' },
+  { key: 'sec', name: 'Security', tag: '[SEC]', color: '#ef4444' },
+  { key: 'pentest', name: 'Pen Tester', tag: '[PENTEST]', color: '#991b1b' },
+  { key: 'ux', name: 'UX Designer', tag: '[UX]', color: '#ec4899' },
+  { key: 'data', name: 'Data Engineer', tag: '[DATA]', color: '#6366f1' },
+];
+
+let chatMessages = [];
+let chatAvailable = true;
+let _lastMsgCount = 0;
+let workspacesConfig = { workspaces: [], active: '' };
+let activeModule = '';
+
+// ─── Sound Notification ─────────────────────────────────────
+const _audioCtx = typeof AudioContext !== 'undefined' ? new AudioContext() : null;
+function playNotifSound() {
+  if (!_audioCtx) return;
+  try {
+    const osc = _audioCtx.createOscillator();
+    const gain = _audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(_audioCtx.destination);
+    osc.frequency.value = 660;
+    osc.type = 'sine';
+    gain.gain.value = 0.08;
+    gain.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.3);
+    osc.start(_audioCtx.currentTime);
+    osc.stop(_audioCtx.currentTime + 0.3);
+  } catch(e) {}
+}
+
+// ─── Commands ───────────────────────────────────────────────
+const COMMANDS = [
+  { name: '@SM', desc: 'Dirigir mensaje al Scrum Master' },
+  { name: '@TL', desc: 'Dirigir mensaje al Tech Lead' },
+  { name: '@DEV', desc: 'Dirigir mensaje al Developer' },
+  { name: '@QA', desc: 'Dirigir mensaje al QA Engineer' },
+  { name: '@ARCH', desc: 'Dirigir mensaje al Cloud Architect' },
+  { name: '@SEC', desc: 'Dirigir mensaje al Security Engineer' },
+  { name: '@DBA', desc: 'Dirigir mensaje al DBA' },
+  { name: '@UX', desc: 'Dirigir mensaje al UX Designer' },
+];
+
+function toggleCommands() {
+  const panel = document.getElementById('commands-panel');
+  panel.classList.toggle('open');
+  if (panel.classList.contains('open') && !panel.innerHTML) {
+    // Load skills from API
+    fetch('/api/skills').then(r => r.json()).then(data => {
+      const skills = (data.skills || []).slice(0, 10);
+      let html = '<div style="margin-bottom:6px;font-size:10px;color:var(--text-dim);font-weight:600">MENCIONES</div>';
+      html += COMMANDS.map(c => `<div class="cmd-item"><span class="cmd-name">${c.name}</span><span class="cmd-desc">${c.desc}</span></div>`).join('');
+      if (skills.length) {
+        html += '<div style="margin:8px 0 4px;font-size:10px;color:var(--text-dim);font-weight:600">SKILLS ACTIVOS</div>';
+        html += skills.map(s => `<div class="cmd-item"><span class="cmd-name">${s.name}</span><span class="cmd-desc">${s.description || ''}</span></div>`).join('');
+      }
+      panel.innerHTML = html;
+    }).catch(() => {
+      panel.innerHTML = COMMANDS.map(c => `<div class="cmd-item"><span class="cmd-name">${c.name}</span><span class="cmd-desc">${c.desc}</span></div>`).join('');
+    });
+  }
+}
+
+// ─── Mention Autocomplete ───────────────────────────────────
+function handleMentionInput(e) {
+  const input = e.target;
+  const text = input.value;
+  const popup = document.getElementById('mention-popup');
+  // Check if last typed char sequence matches @
+  const match = text.match(/@(\w*)$/);
+  if (match) {
+    const query = match[1].toLowerCase();
+    const matches = ROLES.filter(r => r.key.startsWith(query) || r.name.toLowerCase().includes(query));
+    if (matches.length) {
+      popup.innerHTML = matches.map(r =>
+        `<div class="mention-item" onclick="insertMention('${r.key}')"><div class="mention-dot" style="background:${r.color}"></div><span style="color:${r.color};font-weight:600">${r.name}</span><span style="color:var(--text-dim);font-size:9px;margin-left:auto">@${r.key.toUpperCase()}</span></div>`
+      ).join('');
+      popup.classList.add('open');
+      return;
+    }
+  }
+  popup.classList.remove('open');
+}
+
+function insertMention(key) {
+  const input = document.getElementById('chat-input');
+  input.value = input.value.replace(/@\w*$/, `@${key.toUpperCase()} `);
+  document.getElementById('mention-popup').classList.remove('open');
+  input.focus();
+}
+
+function handleInputKeydown(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    document.getElementById('mention-popup').classList.remove('open');
+    sendMessage();
+  }
+}
+
+// ─── Workspaces & Modules ────────────────────────────────────
+async function loadWorkspaces() {
+  try {
+    const r = await fetch('/api/workspaces');
+    workspacesConfig = await r.json();
+    activeModule = workspacesConfig.active_module || '';
+    renderWorkspaceTabs();
+    renderModuleTabs();
+  } catch(e) { console.error('loadWorkspaces:', e); }
+}
+
+function renderWorkspaceTabs() {
+  const el = document.getElementById('workspace-tabs');
+  const tabs = workspacesConfig.workspaces.map(w =>
+    `<button class="ws-tab ${w.name === workspacesConfig.active ? 'active' : ''}" onclick="switchWorkspace('${w.name}')" title="${w.path}">${w.name}</button>`
+  ).join('');
+  el.innerHTML = tabs + `<button class="ws-tab-add" onclick="addWorkspace()" title="Agregar proyecto">+</button>`;
+}
+
+function renderModuleTabs() {
+  const el = document.getElementById('module-tabs');
+  const ws = workspacesConfig.workspaces.find(w => w.name === workspacesConfig.active);
+  const modules = ws?.modules || [];
+  if (!modules.length) {
+    el.innerHTML = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono);padding:5px 0;">sin módulos</span><button class="mod-tab-add" onclick="addModule()" title="Agregar módulo">+</button>`;
+    return;
+  }
+  const allTab = `<button class="mod-tab ${activeModule === '' ? 'active' : ''}" onclick="switchModule('')"># todo</button>`;
+  const modTabs = modules.map(m =>
+    `<button class="mod-tab ${activeModule === m ? 'active' : ''}" onclick="switchModule('${m}')"># ${m}</button>`
+  ).join('');
+  el.innerHTML = allTab + modTabs + `<button class="mod-tab-add" onclick="addModule()" title="Agregar módulo">+</button>`;
+}
+
+async function switchWorkspace(name) {
+  if (name === workspacesConfig.active) return;
+  try {
+    const r = await fetch('/api/workspaces/active', {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      activeModule = '';
+      workspacesConfig.active = name;
+      renderWorkspaceTabs();
+      renderModuleTabs();
+      if (data.state) renderAll(data.state);
+      loadChatHistory();
+    }
+  } catch(e) { console.error('switchWorkspace:', e); }
+}
+
+async function switchModule(mod) {
+  if (mod === activeModule) return;
+  try {
+    const r = await fetch('/api/modules/active', {
+      method: 'PUT', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({module: mod})
+    });
+    const data = await r.json();
+    if (data.ok) {
+      activeModule = mod;
+      renderModuleTabs();
+      chatMessages = [];
+      renderChat();
+      loadChatHistory();
+      fetch('/api/state').then(r => r.json()).then(s => renderKanban(s));
+    } else if (data.error) {
+      console.error('switchModule:', data.error);
+    }
+  } catch(e) { console.error('switchModule:', e); }
+}
+
+async function addWorkspace() {
+  const name = prompt('Nombre del workspace:');
+  if (!name) return;
+  const path = prompt('Ruta del proyecto (ej: /home/omar/mi-proyecto):');
+  if (!path) return;
+  try {
+    const r = await fetch('/api/workspaces', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({name, path})
+    });
+    const data = await r.json();
+    if (data.error) { alert(data.error); return; }
+    if (data.workspaces) workspacesConfig = data.workspaces;
+    renderWorkspaceTabs();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+async function addModule() {
+  const mod = prompt('Nombre del módulo (ej: backend, frontend):');
+  if (!mod) return;
+  try {
+    const r = await fetch(`/api/workspaces/${workspacesConfig.active}/modules`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({module: mod})
+    });
+    const data = await r.json();
+    if (data.error) { alert(data.error); return; }
+    const ws = workspacesConfig.workspaces.find(w => w.name === workspacesConfig.active);
+    if (ws) ws.modules = data.modules;
+    renderModuleTabs();
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ─── Init ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  loadWorkspaces();
+  connectWS();
+  loadChatHistory();
+});
+
+// ─── WebSocket ──────────────────────────────────────────────
+function connectWS() {
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'state') renderAll(msg.data);
+  };
+  ws.onclose = () => setTimeout(connectWS, 3000);
+}
+
+// ─── Render ─────────────────────────────────────────────────
+function renderAll(s) {
+  renderGitHub(s);
+  renderHealth(s);
+  renderKanban(s);
+  renderTeam(s);
+  renderAgentActivity();
+  renderBlockers(s);
+  renderPipeline();
+  document.getElementById('methodology').textContent = (s.methodology || 'lean-xp').toUpperCase().replace('-', ' ');
+  document.getElementById('project-name').textContent = s.project_name || '--';
+  if (s.workspaces) {
+    workspacesConfig = s.workspaces;
+    renderWorkspaceTabs();
+    renderModuleTabs();
+  }
+}
+
+const PHASE_NAMES = {
+  intake: 'Intake (SM)', plan: 'Plan (TL)', exec: 'Exec (DEV)',
+  verify: 'Verify (QA)', fix: 'Fix (DEV)', complete: 'Done', failed: 'Failed'
+};
+const PHASE_COLORS = {
+  intake: '#a855f7', plan: '#14b8a6', exec: '#3b82f6',
+  verify: '#22c55e', fix: '#f97316', complete: '#22c55e', failed: '#ef4444'
+};
+
+async function renderPipeline() {
+  try {
+    const r = await fetch('/api/pipeline');
+    const p = await r.json();
+    const bar = document.getElementById('pipeline-bar');
+    if (!p.active) {
+      bar.classList.remove('active');
+      return;
+    }
+    bar.classList.add('active');
+    const color = PHASE_COLORS[p.phase] || 'var(--accent)';
+    document.querySelector('.pipeline-indicator').style.background = color;
+    document.getElementById('pl-phase').textContent = PHASE_NAMES[p.phase] || p.phase;
+    document.getElementById('pl-phase').style.color = color;
+    document.getElementById('pl-task').textContent = p.title || p.task_id;
+    const fixes = p.fix_attempts ? ` | fix ${p.fix_attempts}/3` : '';
+    const mod = p.module ? ` | ${p.module}` : '';
+    document.getElementById('pl-meta').textContent = `${p.task_id}${mod}${fixes}`;
+
+    // If workers are active, show them
+    if (p.workers) {
+      const w = p.workers;
+      const active = w.in_progress || 0;
+      if (active > 0) {
+        document.getElementById('pl-meta').textContent += ` | ${active} workers activos`;
+      }
+    }
+  } catch(e) {}
+}
+
+function renderGitHub(s) {
+  const gh = s.github || {};
+  const repoEl = document.getElementById('gh-repo');
+  if (gh.repo_url) { repoEl.textContent = gh.repo_url.replace('https://github.com/', ''); repoEl.href = gh.repo_url; }
+  document.getElementById('gh-branch').textContent = gh.current_branch || '--';
+  if (gh.last_commit) {
+    document.getElementById('gh-hash').textContent = gh.last_commit.hash;
+    document.getElementById('gh-msg').textContent = gh.last_commit.message;
+    document.getElementById('gh-time').textContent = gh.last_commit.time_ago;
+  }
+  document.getElementById('gh-prs').textContent = gh.open_prs ?? 0;
+  const ci = document.getElementById('gh-ci');
+  const st = gh.ci_status || '--';
+  ci.textContent = st === 'success' ? '\u2705' : st === 'failure' ? '\u274c' : st === 'running' ? '\u23f3' : '--';
+  ci.style.color = st === 'success' ? 'var(--green)' : st === 'failure' ? 'var(--red)' : 'var(--text-dim)';
+}
+
+function renderHealth(s) {
+  const h = s.sprint_health || {};
+  const sum = s.summary || {};
+  document.getElementById('health-goal').textContent = h.goal || 'Sin meta definida';
+  document.getElementById('hm-days').textContent = h.days_remaining != null ? h.days_remaining : '--';
+  document.getElementById('hm-backlog').textContent = sum.backlog_count || 0;
+  document.getElementById('hm-wip').textContent = `${sum.in_progress_count||0}/${sum.wip_limit||2}`;
+  document.getElementById('hm-done').textContent = sum.done_count || 0;
+  document.getElementById('hm-sp').textContent = `${h.sp_completed||0}/${h.sp_planned||0}`;
+  const pct = h.progress || 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-fill').style.background = h.status === 'behind' ? 'var(--red)' : h.status === 'at_risk' ? 'var(--yellow)' : 'var(--green)';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+function renderKanban(s) {
+  // Backlog active items + completed items from backlog go to "done" column too
+  const backlog = (s.backlog?.active || []);
+  const progress = (s.sprint?.in_progress || []);
+  const sprintDone = (s.sprint?.done || []);
+  const backlogDone = (s.backlog?.completed || []);
+  // Merge done from sprint + backlog completed
+  const done = [...sprintDone, ...backlogDone];
+
+  renderCol('cards-backlog', 'cnt-backlog', backlog, 'Sin items en backlog', false);
+  renderCol('cards-progress', 'cnt-progress', progress, 'Sin items en progreso', true);
+  renderCol('cards-done', 'cnt-done', done, 'Sin items completados', false);
+}
+
+function renderCol(cardsId, countId, items, empty, isProgressCol) {
+  document.getElementById(countId).textContent = items.length;
+  const el = document.getElementById(cardsId);
+  if (!items.length) { el.innerHTML = `<div class="card-empty">${empty}</div>`; return; }
+
+  // Group items by sprint tag [S1], [S2], etc.
+  const sprintGroups = {};
+  const order = [];
+  items.forEach(i => {
+    const m = (i.title || '').match(/\[S(\d+)\]/);
+    const key = m ? `Sprint ${m[1]}` : '_none';
+    if (!sprintGroups[key]) { sprintGroups[key] = []; order.push(key); }
+    sprintGroups[key].push(i);
+  });
+
+  let html = '';
+  order.forEach(key => {
+    const group = sprintGroups[key];
+    const hasSprint = key !== '_none';
+
+    if (hasSprint) {
+      const gid = cardsId + '-' + key.replace(/\s/g, '');
+      const totalSp = group.reduce((s, i) => s + (i.sp || 0), 0);
+      const collapsed = _collapsedSprints.has(gid) ? ' collapsed' : '';
+      html += '<div class="sprint-group' + collapsed + '" id="' + gid + '">';
+      html += '<div class="sprint-divider" onclick="toggleSprint(\'' + gid + '\')">';
+      html += '<span class="sprint-arrow">▼</span>' + key;
+      html += '<span class="sprint-count">' + group.length + ' · ' + totalSp + 'SP</span>';
+      html += '</div><div class="sprint-cards">';
+    }
+
+    group.forEach(i => {
+      const title = (i.title || '').replace(/\[S\d+\]\s*/g, '').replace(/\[Pendiente\]\s*/g, '');
+      const blocked = i.blocked ? 'card-blocked' : '';
+      const active = isProgressCol ? 'card-active' : '';
+      const prio = i.priority || '';
+      let prioHtml = '';
+      if (prio && prio !== 'P3') {
+        prioHtml = '<span class="card-priority card-priority-' + prio + '">' + prio + '</span>';
+      }
+      const spHtml = i.sp ? '<span class="card-sp">' + i.sp + 'SP</span>' : '';
+      html += '<div class="card ' + blocked + ' ' + active + '">' + prioHtml + esc(title) + spHtml + '</div>';
+    });
+
+    if (hasSprint) html += '</div></div>';
+  });
+
+  el.innerHTML = html;
+}
+
+function renderTeam(s) {
+  const team = s.team || [];
+  const grid = document.getElementById('team-grid');
+  if (!team.length) {
+    // Default roles if no config
+    grid.innerHTML = ROLES.map(r =>
+      `<div class="role-card role-standby"><div class="role-dot" style="background:${r.color}"></div><span class="role-name">${r.name}</span><span class="role-tag">${r.tag}</span></div>`
+    ).join('');
+    return;
+  }
+  grid.innerHTML = team.map(r =>
+    `<div class="role-card ${r.status==='standby'?'role-standby':''}">
+      <div class="role-dot" style="background:${r.color}"></div>
+      <span class="role-name">${esc(r.name)}</span>
+      <span class="role-tag">${r.tag}</span>
+    </div>`
+  ).join('');
+}
+
+async function renderAgentActivity() {
+  const el = document.getElementById('agent-activity');
+  try {
+    const r = await fetch('/api/pipeline');
+    const p = await r.json();
+
+    if (!p.active || p.phase === 'complete' || p.phase === 'failed') {
+      el.innerHTML = '<div class="agent-idle">Sin agente activo</div>';
+      return;
+    }
+
+    const color = PHASE_COLORS[p.phase] || '#6366f1';
+    const roleName = PHASE_NAMES[p.phase] || p.phase;
+    const fixes = p.fix_attempts ? ' (fix ' + p.fix_attempts + '/3)' : '';
+
+    // Get last few chat messages to show activity
+    const cr = await fetch('/api/chat/history?limit=5');
+    const cd = await cr.json();
+    const recentMsgs = (cd.messages || []).filter(m => m.sender === 'system' || m.sender === 'assistant').slice(-4);
+
+    let logHtml = '';
+    recentMsgs.forEach(m => {
+      const role = m.role || '';
+      const text = (m.text || '').substring(0, 100);
+      const roleColor = ROLES.find(r => r.tag === role || r.key === role);
+      const c = roleColor ? roleColor.color : '#7a7a8c';
+      logHtml += '<div class="agent-log-entry"><span style="color:' + c + ';font-weight:600">[' + (role || 'SYS') + ']</span> ' + esc(text) + '</div>';
+    });
+
+    el.innerHTML = '<div class="agent-live">'
+      + '<div class="agent-header">'
+      + '<div class="pipeline-indicator" style="background:' + color + '"></div>'
+      + '<span class="agent-role-name" style="color:' + color + '">' + roleName + '</span>'
+      + '<span class="agent-phase-badge" style="background:' + color + '22;color:' + color + ';border:1px solid ' + color + '30">' + p.phase.toUpperCase() + fixes + '</span>'
+      + '</div>'
+      + '<div class="agent-task-title">' + esc(p.title || p.task_id) + '</div>'
+      + '<div class="agent-details">' + p.task_id + (p.module ? ' · ' + p.module : '') + '</div>'
+      + '<div class="agent-log">' + (logHtml || '<div class="agent-log-entry" style="color:var(--text-dim)">Esperando actividad...</div>') + '</div>'
+      + '</div>';
+  } catch(e) {
+    el.innerHTML = '<div class="agent-idle">Error cargando estado</div>';
+  }
+}
+
+function renderBlockers(s) {
+  const blockers = s.blockers || [];
+  const section = document.getElementById('blockers-section');
+  const list = document.getElementById('blockers-list');
+  if (!blockers.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = blockers.map(b =>
+    `<div class="blocker-item"><div class="blocker-dot"></div><span>${esc(b.task)}</span></div>`
+  ).join('');
+}
+
+// ─── Chat ───────────────────────────────────────────────────
+async function loadChatHistory() {
+  try {
+    const resp = await fetch('/api/chat/history?limit=40');
+    const data = await resp.json();
+    if (data.messages?.length) { chatMessages = data.messages; renderChat(); }
+  } catch (e) { console.error('Chat load failed:', e); }
+}
+
+function renderChat() {
+  const container = document.getElementById('chat-messages');
+  const msgs = chatMessages.map(m => {
+    const sender = m.sender || 'unknown';
+    const role = m.role || '';
+    const roleInfo = ROLES.find(r => r.tag === role || r.key === role);
+    const avatarColor = roleInfo ? roleInfo.color : '';
+    const avatarStyle = avatarColor ? `background:${avatarColor}22;color:${avatarColor}` : '';
+    const isUser = sender === 'user';
+    const isAssistant = sender === 'assistant';
+    const isSystem = sender === 'system';
+    const cls = isUser ? 'user' : isAssistant ? 'claude' : isSystem ? 'system' : 'claude';
+    const displayName = isUser ? 'Product Owner' : roleInfo ? roleInfo.name : isSystem ? 'Sistema' : sender;
+    const nameColor = isUser ? 'color:var(--blue)' : roleInfo ? `color:${roleInfo.color}` : '';
+    const text = formatMsg(m.text || '');
+    const initial = displayName[0].toUpperCase();
+    const hasRole = roleInfo && !isSystem;
+    const roleBorder = hasRole ? `--msg-role-color:${roleInfo.color}` : '';
+    const roleBadge = hasRole ? `<span class="msg-role-badge" style="background:${roleInfo.color}20;color:${roleInfo.color};border:1px solid ${roleInfo.color}30">${role}</span>` : '';
+    return `<div class="message ${hasRole?'role-msg':''}" style="${roleBorder}"><div class="msg-avatar ${roleInfo||isAssistant?'':cls}" style="${avatarStyle}">${initial}</div><div class="msg-body"><div class="msg-header"><span class="msg-sender" style="${nameColor}">${esc(displayName)}</span>${roleBadge}<span class="msg-time">${m.time||''}</span></div><div class="msg-text">${text}</div></div></div>`;
+  }).join('');
+  container.innerHTML = msgs || '<div class="message"><div class="msg-avatar system">S</div><div class="msg-body"><div class="msg-header"><span class="msg-sender">Sistema</span></div><div class="msg-text">Escribe un requerimiento. Usa <code>@SM</code> <code>@TL</code> <code>@QA</code> para dirigirte a un rol.</div></div></div>';
+  container.scrollTop = container.scrollHeight;
+}
+
+function formatMsg(t) {
+  t = esc(t);
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  t = t.replace(/\n/g, '<br>');
+  return t;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+  chatMessages.push({ sender: 'user', text: text, time: timeStr });
+  renderChat();
+
+  try {
+    await fetch('/api/chat/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    });
+  } catch (e) { console.error('Send failed:', e); }
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+// Track collapsed state so re-renders preserve it
+const _collapsedSprints = new Set();
+
+function toggleSprint(gid) {
+  const el = document.getElementById(gid);
+  if (!el) return;
+  el.classList.toggle('collapsed');
+  if (el.classList.contains('collapsed')) {
+    _collapsedSprints.add(gid);
+  } else {
+    _collapsedSprints.delete(gid);
+  }
+}
+
+// Reload chat every 2s for responsive agent feedback
+setInterval(async () => {
+  try {
+    const resp = await fetch('/api/chat/history?limit=40');
+    const data = await resp.json();
+    if (!data.messages) return;
+    // Compare by last message ID to detect changes reliably
+    const lastServer = data.messages.length ? data.messages[data.messages.length - 1].id : 0;
+    const lastLocal = chatMessages.length ? chatMessages[chatMessages.length - 1].id : 0;
+    if (lastServer !== lastLocal || data.messages.length !== chatMessages.length) {
+      const hasAgentMsg = data.messages.some(m =>
+        m.id > lastLocal && (m.sender === 'assistant' || (m.sender === 'system' && m.role))
+      );
+      chatMessages = data.messages;
+      renderChat();
+      if (hasAgentMsg) playNotifSound();
+    }
+  } catch (e) {}
+}, 2000);
+</script>
+</body>
+</html>

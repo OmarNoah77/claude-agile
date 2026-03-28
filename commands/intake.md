@@ -101,7 +101,30 @@ After ccpm creates the PRD, update the BACKLOG.md entry with a reference:
 - **ccpm PRD:** `.claude/prds/<feature-name>.md`
 ```
 
-## Step 8: Methodology-Specific Handling
+## Step 8: Role Activation
+
+After defining the story, classify the task type and announce which specialist roles will participate. Reference `skills/core/communication-protocol.md` for the full activation matrix.
+
+### Classification Rules
+- Contains auth, payments, user data, or external API → activate **Security Engineer**
+- Contains database schema changes or new tables → activate **DBA**
+- Contains UI changes, new pages, or user flows → activate **UX Designer**
+- Contains deployment, CI/CD, or infra changes → activate **DevOps Engineer**
+- Contains analytics, reporting, or data exports → activate **Data Engineer**
+- Is a major release → activate **Pen Tester**
+- Contains scaling, architecture, or cost concerns → activate **Cloud Architect**
+- Contains performance issues or monitoring needs → activate **Observability Engineer**
+
+### Announce in Team Chat format
+```
+[SCRUM MASTER] #TASK-<NNN> INTAKE — "<story title>"
+  → User Story creada: US-<NNN> (<points> pts)
+  → Roles activados: <list of active roles>
+```
+
+Each activated role then adds their assessment before implementation begins.
+
+## Step 9: Methodology-Specific Handling
 
 ### Scrum
 - Story goes to the backlog for the next Sprint Planning session
@@ -121,14 +144,14 @@ After ccpm creates the PRD, update the BACKLOG.md entry with a reference:
 - Reference `skills/lean-xp/tdd-enforcer.md`
 - Note any waste considerations
 
-## Step 9: GitHub Integration (via ccpm)
+## Step 10: GitHub Integration (via ccpm)
 
 GitHub integration is handled by ccpm's Sync phase. Inform the user:
 > When you are ready to sync to GitHub, use `/claude-agile:plan` which will trigger ccpm's sync phase to create GitHub Issues and worktrees.
 
 For immediate GitHub needs, the user can also directly tell ccpm: "sync the <feature> epic to GitHub"
 
-## Step 10: Confirmation
+## Step 11: Confirmation
 
 Present the complete story to the user:
 

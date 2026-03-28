@@ -1,3 +1,12 @@
+---
+name: po-intake
+description: "Guide for running PO intake sessions: elicit requirements, write user stories, estimate effort"
+triggers: [requirement, feature, user story, intake, requerimiento, funcionalidad]
+phases: [intake]
+roles: [SM]
+priority: 10
+---
+
 # Product Owner Intake — Reference Knowledge
 
 This document provides guidance on running effective Product Owner intake sessions: how to elicit requirements, write good user stories, estimate effort, and map dependencies.

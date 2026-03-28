@@ -1,12 +1,61 @@
 # claude-agile
 
-An **agile methodology layer** on top of [ccpm](https://github.com/automazeio/ccpm). **You are the Product Owner.** AI agents handle the Scrum Master, Tech Lead, Developer, and QA roles -- using ccpm for the project management mechanics underneath.
+An **agile methodology layer** on top of [ccpm](https://github.com/automazeio/ccpm). **You are the Product Owner.** A 12-role AI specialist team handles everything from Scrum ceremonies to security reviews, infrastructure design, and UX assessment -- using ccpm for project management mechanics underneath.
 
 Supports four agile methodologies:
 - **Scrum** -- Structured sprints with full ceremonies
 - **Kanban** -- Continuous flow with WIP limits
 - **Shape Up** -- 6-week cycles with pitches and betting
 - **Lean/XP** -- TDD-first development with waste elimination
+
+## Full Team (12 Roles)
+
+### Core Team (always active)
+
+| Role | Tag | What They Do |
+|------|-----|-------------|
+| **Scrum Master** | `[SM]` | Facilitates ceremonies, intake, role activation, sprint close |
+| **Tech Lead** | `[TL]` | Architecture decisions, technical analysis, ADRs |
+| **Developer** | `[DEV]` | Implementation with TDD, code writing |
+| **QA** | `[QA]` | Acceptance criteria verification, quality gates |
+
+### Infra Team (activates on infrastructure tasks)
+
+| Role | Tag | Color | Triggers |
+|------|-----|-------|----------|
+| **Cloud Architect** | `[ARCH]` | Orange | Cost optimization, scalability, multi-region, new services |
+| **DevOps Engineer** | `[DEVOPS]` | Yellow | CI/CD, Docker, GitHub Actions, deploy issues, secrets |
+| **DBA** | `[DBA]` | Brown | Slow queries, schema changes, migrations, indexing |
+| **Observability Engineer** | `[OBS]` | Cyan | Production debugging, logging, alerts, SLOs, monitoring |
+
+### Security Team (activates on auth/payment/data tasks)
+
+| Role | Tag | Color | Triggers |
+|------|-----|-------|----------|
+| **Security Engineer** | `[SEC]` | Red | Auth, payments, user data, API endpoints, OWASP |
+| **Penetration Tester** | `[PENTEST]` | Dark Red | Major releases, new endpoints, auth changes |
+
+### Product Team (activates on UI/data tasks)
+
+| Role | Tag | Color | Triggers |
+|------|-----|-------|----------|
+| **UX Designer** | `[UX]` | Pink | New UI features, user flows, accessibility, mobile |
+| **Data Engineer** | `[DATA]` | Indigo | Analytics, reporting, data exports, privacy |
+
+## Role Activation
+
+The Scrum Master automatically activates specialist roles based on task type:
+
+| Task Type | Roles Activated |
+|-----------|----------------|
+| `feature` | Scrum Master + Tech Lead + Developer + QA |
+| `infra/deploy` | DevOps Engineer (+ Cloud Architect if design) |
+| `database` | DBA (+ Tech Lead if schema change) |
+| `security` | Security Engineer (always on auth/payment) |
+| `performance` | Observability Engineer + DBA |
+| `UI/UX` | Product Designer → Developer + QA |
+| `data/analytics` | Data Engineer + DBA |
+| `major release` | Pen Tester + Security Engineer + QA |
 
 ## Why a Layer on ccpm?
 
@@ -18,257 +67,203 @@ claude-agile adds what ccpm lacks:
 |-------------------|---------------|
 | Methodology selection (Scrum/Kanban/Shape Up/Lean-XP) | PRD creation and brainstorming |
 | Natural language PO intake with User Stories | Epic and task decomposition |
-| Explicit agent roles (SM, TL, Dev, QA) | Parallel execution with multiple agents |
+| 12-role specialist team with auto-activation | Parallel execution with multiple agents |
 | Sprint/cycle planning ceremonies | GitHub sync (issues, worktrees) |
-| Velocity tracking and burndown | Deterministic status scripts |
-| Retrospectives | Issue and milestone management |
-| ECC integration (TDD, verification) | N/A (ccpm does not integrate ECC) |
+| Communication protocol with role-tagged messages | Deterministic status scripts |
+| Onboarding wizard with structured interview | N/A |
+| Audit trails and auto-generated ADRs | Issue and milestone management |
+| ECC integration (TDD, verification) | N/A |
 
 ## Prerequisites
 
 ### 1. Install ccpm (required)
 
-ccpm must be installed first. claude-agile will not function without it.
-
 ```bash
-# Clone ccpm
 git clone https://github.com/automazeio/ccpm.git
-
-# Link as a Claude Code skill
 ln -s $(pwd)/ccpm/skill/ccpm .claude/skills/ccpm
 ```
 
-Verify ccpm is working:
-```bash
-# You should see .claude/skills/ccpm/SKILL.md
-ls .claude/skills/ccpm/
-```
-
-See the [ccpm README](https://github.com/automazeio/ccpm#readme) for full installation instructions.
-
 ### 2. Install everything-claude-code (optional, recommended)
 
-For TDD enforcement and automated QA verification:
-
-```bash
-# Follow installation instructions at:
-# https://github.com/anthropics/everything-claude-code
-```
-
-When ECC is installed, claude-agile's `implement` command uses `/tdd` and `review` uses `/verification-loop` and `/security-scan`.
+For TDD enforcement and automated QA verification. See [ECC](https://github.com/anthropics/everything-claude-code).
 
 ## Install claude-agile
 
-After ccpm is installed:
-
 ```bash
-# Clone claude-agile
 git clone https://github.com/OmarNoah77/claude-agile.git
-
-# Add as a Claude Code plugin
 claude plugin add ./claude-agile
 ```
 
 ## Commands
 
-All commands **wrap** ccpm -- they add an agile methodology layer on top of ccpm's project management.
-
 | Command | Role | What claude-agile Does | What ccpm Does |
 |---------|------|----------------------|----------------|
-| `/claude-agile:init` | Scrum Master | 5 questions -> methodology selection | Project scaffolding |
-| `/claude-agile:intake` | Scrum Master | NLP intake -> User Story with AC | PRD creation (Plan phase) |
-| `/claude-agile:plan` | SM + Tech Lead | Methodology planning + capacity | Task decomposition (Structure) + GitHub sync |
+| `/claude-agile:init` | Scrum Master | Onboarding interview → methodology + team config | Project scaffolding |
+| `/claude-agile:intake` | Scrum Master | NLP intake → User Story → role activation | PRD creation (Plan) |
+| `/claude-agile:plan` | SM + Tech Lead | Methodology planning + specialist assessments | Task decomposition (Structure) + GitHub sync |
 | `/claude-agile:implement` | Developer | Role assignment + TDD (via ECC) | Parallel execution (Execute) |
-| `/claude-agile:review` | QA | AC verification + quality gates | Issue closure + PR management |
-| `/claude-agile:daily` | Scrum Master | Methodology metrics + health | Status scripts (Track phase) |
-| `/claude-agile:close` | Scrum Master | Retro + velocity + archiving | Issue/milestone/epic closure |
-
-### ccpm Pass-Through
-
-ccpm commands remain available directly for power users. You can always say:
-
-| Natural Language | ccpm Action |
-|-----------------|-------------|
-| "I want to build X" | Guided brainstorming + PRD |
-| "parse the X PRD" | Technical epic generation |
-| "break down the X epic" | Task decomposition |
-| "sync the X epic" | GitHub issues + worktree setup |
-| "start working on issue N" | Parallel agent analysis + launch |
-| "standup" / "what's blocked" | Real-time status (bash script) |
+| `/claude-agile:review` | QA | AC verification + security scan | Issue closure + PR management |
+| `/claude-agile:daily` | Scrum Master | Team health + methodology metrics | Status scripts (Track) |
+| `/claude-agile:close` | Scrum Master | Retro + velocity + audit trail archiving | Issue/milestone closure |
 
 ## Quick Start
 
 ```bash
-# 1. Initialize -- answer 5 questions to pick your methodology
+# 1. Initialize -- structured interview picks methodology + configures team
 /claude-agile:init
 
-# 2. Add your first story (NLP intake -> ccpm PRD)
+# 2. Add your first story (NLP intake → role activation → ccpm PRD)
 /claude-agile:intake
 > "I want users to be able to sign up with email and password"
+# → Security Engineer activates (auth task)
+# → UX Designer activates (new UI flow)
 
-# 3. Plan your sprint (methodology planning -> ccpm task decomposition)
+# 3. Plan your sprint (specialist assessments → ccpm task decomposition)
 /claude-agile:plan
 
-# 4. Start building (developer role + ccpm parallel execution + ECC /tdd)
+# 4. Build (developer role + ccpm parallel execution + ECC /tdd)
 /claude-agile:implement
 
-# 5. Check status anytime (ccpm status scripts + methodology metrics)
+# 5. Status (team health + methodology metrics)
 /claude-agile:daily
 
-# 6. Review completed work (QA role + ECC /verification-loop)
+# 6. Review (QA + security scan + ECC /verification-loop)
 /claude-agile:review
 
-# 7. Close the sprint (retro + ccpm issue cleanup)
+# 7. Close sprint (retro + audit trail + ccpm cleanup)
 /claude-agile:close
 ```
 
-## How It Works: The Layer Architecture
+## Communication Protocol
+
+Every role-tagged message in Team Chat follows this format:
 
 ```
-+---------------------------------------------+
-|           claude-agile (this plugin)         |
-|  Methodology | Roles | Ceremonies | Retros  |
-+---------------------------------------------+
-|                ccpm (required)               |
-|  PRDs | Epics | Tasks | GitHub | Parallel   |
-+---------------------------------------------+
-|      ECC / everything-claude-code (optional) |
-|  /tdd | /verification-loop | /security-scan |
-+---------------------------------------------+
-|         Claude Code / Agent Harness          |
-+---------------------------------------------+
+[ROLE TAG] #TASK-NNN MESSAGE_TYPE — Summary
+  → Detail 1
+  → Detail 2
 ```
 
-### Data Flow Example
+Message types: `INTAKE` | `DECISION` | `ASSESSMENT` | `QUESTION` | `BLOCKER` | `UPDATE` | `APPROVAL`
+
+### Example Task Flow
 
 ```
-/claude-agile:intake "I need a payment system"
-    |
-    v
-claude-agile: Asks 3 clarifying questions
-claude-agile: Writes US-001 to BACKLOG.md (Scrum Master role)
-    |
-    v  delegates to ccpm
-ccpm: Brainstorms -> creates .claude/prds/payment-system.md
-    |
-    v
-/claude-agile:plan
-    |
-    v
-claude-agile: Sprint planning ceremony (methodology-specific)
-claude-agile: Selects US-001 for sprint, sets capacity
-    |
-    v  delegates to ccpm
-ccpm: "parse the payment-system PRD" -> epic
-ccpm: "break down the payment-system epic" -> 5 tasks
-ccpm: "sync the payment-system epic" -> GitHub issues + worktree
-    |
-    v
-/claude-agile:implement
-    |
-    v
-claude-agile: Assigns Developer role, updates sprint tracking
-    |
-    v  delegates to ccpm + ECC
-ccpm: "start working on issue 42" -> 3 parallel streams
-ECC:  /tdd -> Red-Green-Refactor cycle
+[SM] #TASK-001 INTAKE — "Módulo financiero: cuentas y gastos"
+  → User Story: US-001 (5 pts)
+  → Roles activados: Tech Lead, Security, DBA, Developer, QA
+
+[TL] #TASK-001 DECISION — Tabla `accounts` + `transactions`
+  → Patrón: repository pattern
+
+[SEC] #TASK-001 ASSESSMENT — ⚠️ MEDIUM risk
+  → Datos financieros requieren encryption at rest
+  → Rate limiting en endpoints de transacciones
+
+[DBA] #TASK-001 ASSESSMENT — Índices recomendados:
+  → idx_transactions_user_date
+  → idx_accounts_user_id
+
+[DEV] #TASK-001 UPDATE — Implementando...
+  → Tests escritos primero (TDD)
+
+[QA] #TASK-001 APPROVAL ✅ — 47 tests passing
+
+[SM] #TASK-001 CLOSED — US-001 completada
+  → 5 story points → velocity actualizada
 ```
-
-## Methodology Guide
-
-### Scrum
-Best for teams (2-9 people) with somewhat predictable requirements and stakeholders who need regular visibility.
-
-- **Cadence:** 2-week sprints
-- **Ceremonies:** Sprint Planning, Daily Standup, Sprint Review, Retrospective
-- **Key metric:** Velocity (story points per sprint)
-- **ccpm mapping:** Each sprint selects backlog items -> ccpm decomposes into epics/tasks
-
-### Kanban
-Best for continuous flow work where priorities shift frequently.
-
-- **Cadence:** Continuous (no sprints)
-- **Core practice:** WIP limits per board column
-- **Key metrics:** Cycle Time, Throughput, Lead Time
-- **ccpm mapping:** Items pulled continuously -> ccpm tracks per-item progress
-
-### Shape Up
-Best for solo developers or small autonomous teams building features with fixed time budgets.
-
-- **Cadence:** 6-week build cycles + 2-week cooldowns
-- **Core practice:** Pitching and betting, scope hammering
-- **Key metric:** Appetite consumed vs delivered scope
-- **ccpm mapping:** One pitch -> one ccpm epic -> appetite-bounded execution
-
-### Lean/XP
-Best for projects where technical quality is non-negotiable from day one.
-
-- **Cadence:** Continuous
-- **Core practice:** TDD (Red-Green-Refactor) enforced via ECC
-- **Key metric:** TDD compliance, defect rate
-- **ccpm mapping:** Highest-value items first -> ccpm execution + ECC /tdd enforcement
 
 ## Project Files
 
 ### claude-agile Creates
 
-| File | Purpose |
-|------|---------|
-| `.claude-agile/config.json` | Methodology, velocity, roles, integration status |
-| `BACKLOG.md` | Prioritized product backlog (references ccpm PRDs) |
-| `SPRINT.md` | Sprint/cycle plan (references ccpm epics) |
+| File/Dir | Purpose |
+|----------|---------|
+| `.claude-agile/config.json` | Methodology, team config, velocity, integrations |
+| `.claude-agile/project-profile.json` | Onboarding interview answers |
+| `.claude-agile/history/TASK-NNN.md` | Full audit trail per task |
+| `.claude-agile/decisions/ADR-NNN.md` | Architecture Decision Records |
+| `.claude-agile/decisions/SEC-NNN.md` | Security decisions |
+| `.claude-agile/decisions/DB-NNN.md` | Database decisions |
+| `.claude-agile/sprints/sprint-N/` | Sprint archives (planning, retro, velocity) |
+| `BACKLOG.md` | Prioritized product backlog |
+| `SPRINT.md` | Sprint/cycle plan |
 | `DAILY.md` | Session log with methodology metrics |
-| `RETRO.md` | Sprint retrospective (created at close) |
+| `RETRO.md` | Sprint retrospective |
 
 ### ccpm Creates
 
 | Path | Purpose |
 |------|---------|
 | `.claude/prds/` | Product requirements documents |
-| `.claude/epics/<feature>/` | Technical epics, tasks, analysis, updates |
-| `.claude/skills/ccpm/` | ccpm skill files and bash scripts |
+| `.claude/epics/<feature>/` | Technical epics, tasks, analysis |
+| `.claude/skills/ccpm/` | ccpm skill files and scripts |
 
 ## Plugin Structure
 
 ```
 claude-agile/
-+-- .claude-plugin/plugin.json    # Plugin metadata (ccpm dependency declared)
-+-- commands/                     # Slash commands (all wrap ccpm)
-|   +-- init.md                   # /claude-agile:init
-|   +-- intake.md                 # /claude-agile:intake
-|   +-- plan.md                   # /claude-agile:plan
-|   +-- implement.md              # /claude-agile:implement
-|   +-- review.md                 # /claude-agile:review
-|   +-- daily.md                  # /claude-agile:daily
-|   +-- close.md                  # /claude-agile:close
-+-- skills/                       # Methodology knowledge (unique to claude-agile)
-|   +-- core/                     # Cross-methodology knowledge
-|   +-- scrum/                    # Scrum-specific knowledge
-|   +-- kanban/                   # Kanban-specific knowledge
-|   +-- shape-up/                 # Shape Up-specific knowledge
-|   +-- lean-xp/                  # Lean/XP-specific knowledge
-+-- templates/                    # File templates (extend ccpm templates)
-+-- hooks/hooks.json              # Session start hook (ccpm + methodology status)
-+-- CLAUDE.md                     # Project context for Claude
-+-- README.md                     # This file
+├── .claude-plugin/plugin.json     # Plugin metadata (v2.1.0)
+├── commands/                      # Slash commands (all wrap ccpm)
+│   ├── init.md                    # Onboarding wizard + methodology selection
+│   ├── intake.md                  # NLP intake + role activation
+│   ├── plan.md                    # Methodology planning
+│   ├── implement.md               # Developer role + TDD
+│   ├── review.md                  # QA verification
+│   ├── daily.md                   # Standup + team health
+│   └── close.md                   # Sprint close + retro
+├── skills/
+│   ├── core/                      # Cross-methodology knowledge
+│   │   ├── methodology-selector.md
+│   │   ├── po-intake.md
+│   │   ├── daily.md
+│   │   └── communication-protocol.md  # Role communication rules
+│   ├── scrum/                     # Scrum-specific
+│   ├── kanban/                    # Kanban-specific
+│   ├── shape-up/                  # Shape Up-specific
+│   ├── lean-xp/                   # Lean/XP-specific
+│   ├── infra/                     # Infrastructure team
+│   │   ├── cloud-architect.md
+│   │   ├── devops-engineer.md
+│   │   ├── dba.md
+│   │   └── observability-engineer.md
+│   ├── security/                  # Security team
+│   │   ├── security-engineer.md
+│   │   └── pen-tester.md
+│   └── product/                   # Product team
+│       ├── ux-designer.md
+│       └── data-engineer.md
+├── templates/                     # File templates
+├── hooks/hooks.json               # Session start hook
+├── CLAUDE.md
+└── README.md
 ```
 
-## Works With
+## Methodology Guide
 
-### ccpm (required)
-[ccpm](https://github.com/automazeio/ccpm) provides the project management engine. claude-agile wraps every ccpm phase with agile methodology context.
+### Scrum
+Best for teams (2-9 people) with somewhat predictable requirements and stakeholders who need regular visibility.
+- **Cadence:** 2-week sprints
+- **Ceremonies:** Sprint Planning, Daily Standup, Sprint Review, Retrospective
+- **Key metric:** Velocity (story points per sprint)
 
-### everything-claude-code (recommended)
-When [ECC](https://github.com/anthropics/everything-claude-code) is installed:
-- `/claude-agile:implement` calls `/tdd` for test-driven development
-- `/claude-agile:review` calls `/verification-loop` for automated QA
-- `/claude-agile:review` calls `/security-scan` for security analysis
+### Kanban
+Best for continuous flow work where priorities shift frequently.
+- **Cadence:** Continuous (no sprints)
+- **Core practice:** WIP limits per board column
+- **Key metrics:** Cycle Time, Throughput, Lead Time
 
-### GitHub
-GitHub integration is handled by **ccpm's Sync phase**. ccpm creates issues, milestones, worktrees, and manages PRs. claude-agile adds methodology labels and sprint/cycle context.
+### Shape Up
+Best for solo developers or small autonomous teams building features with fixed time budgets.
+- **Cadence:** 6-week build cycles + 2-week cooldowns
+- **Core practice:** Pitching and betting, scope hammering
+- **Key metric:** Appetite consumed vs delivered scope
 
-### MCP Agents
-claude-agile works with multi-agent setups. The session start hook displays both ccpm project status and agile methodology context so any agent can pick up where you left off.
+### Lean/XP
+Best for projects where technical quality is non-negotiable from day one.
+- **Cadence:** Continuous
+- **Core practice:** TDD (Red-Green-Refactor) enforced via ECC
+- **Key metric:** TDD compliance, defect rate
 
 ## License
 

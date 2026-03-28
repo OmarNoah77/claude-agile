@@ -1,7 +1,7 @@
 {
   "name": "claude-agile",
-  "version": "2.0.0",
-  "description": "Agile methodology layer on top of ccpm. Adds methodology selection (Scrum/Kanban/Shape Up/Lean-XP), natural language PO intake, explicit agent roles (Scrum Master, Tech Lead, Developer, QA), ECC integration, and methodology-specific retrospectives. Requires ccpm for project management mechanics.",
+  "version": "2.1.0",
+  "description": "Agile methodology layer on top of ccpm. 12-role specialist team: Core (Scrum Master, Tech Lead, Developer, QA), Infra (Cloud Architect, DevOps, DBA, Observability), Security (Security Engineer, Pen Tester), Product (UX Designer, Data Engineer). Supports Scrum/Kanban/Shape Up/Lean-XP with onboarding wizard, role-based communication protocol, and task audit trails. Requires ccpm.",
   "author": {
     "name": "OmarNoah77",
     "url": "https://github.com/OmarNoah77"
@@ -16,19 +16,10 @@
     "project-management",
     "claude-code",
     "ccpm",
-    "methodology"
-  ],
-  "dependencies": {
-    "ccpm": {
-      "url": "https://github.com/automazeio/ccpm",
-      "description": "Claude Code Project Manager \u2014 handles PRDs, epics, task decomposition, GitHub sync, parallel execution, and status tracking. claude-agile wraps ccpm commands with agile methodology workflows.",
-      "install": "git clone https://github.com/automazeio/ccpm.git && ln -s $(pwd)/ccpm/skill/ccpm .claude/skills/ccpm"
-    }
-  },
-  "optional_dependencies": {
-    "everything-claude-code": {
-      "url": "https://github.com/anthropics/everything-claude-code",
-      "description": "Provides /tdd, /verification-loop, and /security-scan commands used by implement and review workflows."
-    }
-  }
+    "methodology",
+    "devops",
+    "security",
+    "infrastructure",
+    "specialist-team"
+  ]
 }

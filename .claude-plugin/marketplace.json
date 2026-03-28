@@ -1,0 +1,13 @@
+{
+  "name": "claude-agile-local",
+  "owner": {
+    "name": "OmarNoah77"
+  },
+  "plugins": [
+    {
+      "name": "claude-agile",
+      "description": "Agile methodology layer on top of ccpm",
+      "source": "."
+    }
+  ]
+}

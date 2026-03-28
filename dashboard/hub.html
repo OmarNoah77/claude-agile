@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>claude-agile | Hub</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0a12; --bg-card: #12121e; --border: #1e1e30; --text: #e0e0e8;
+  --text-dim: #7a7a8c; --text-bright: #fff; --accent: #6366f1; --green: #22c55e;
+  --red: #ef4444; --yellow: #eab308; --blue: #3b82f6; --radius: 10px;
+  --font: 'Inter', -apple-system, sans-serif; --mono: 'JetBrains Mono', monospace;
+}
+
+body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.hub { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+
+.hub-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+.hub-title { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+.hub-title span { color: var(--text-dim); font-weight: 400; }
+.hub-subtitle { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+
+.add-btn {
+  background: var(--accent); color: white; border: none; border-radius: var(--radius);
+  padding: 10px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: var(--font);
+}
+.add-btn:hover { opacity: 0.9; }
+
+.projects { display: grid; grid-template-columns: 1fr; gap: 12px; }
+
+.project-card {
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 20px; display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: center;
+  transition: border-color 0.15s;
+}
+.project-card:hover { border-color: #3b3b5c; }
+.project-card.running { border-left: 3px solid var(--green); }
+.project-card.stopped { border-left: 3px solid var(--red); opacity: 0.7; }
+
+.project-info { display: flex; flex-direction: column; gap: 6px; }
+.project-name { font-size: 16px; font-weight: 600; color: var(--text-bright); }
+.project-path { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.project-meta { display: flex; gap: 12px; align-items: center; font-size: 11px; }
+.meta-badge {
+  padding: 2px 8px; border-radius: 8px; font-family: var(--mono); font-size: 10px;
+}
+.meta-port { background: rgba(99,102,241,0.15); color: var(--accent); }
+.meta-branch { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.meta-modules { background: rgba(59,130,246,0.15); color: var(--blue); }
+.meta-status { font-weight: 600; }
+.meta-status.on { color: var(--green); }
+.meta-status.off { color: var(--red); }
+
+.project-actions { display: flex; gap: 8px; align-items: center; }
+.action-btn {
+  padding: 8px 16px; border-radius: var(--radius); font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text);
+  font-family: var(--font); transition: all 0.15s;
+}
+.action-btn:hover { border-color: var(--text-dim); }
+.action-btn.open { background: var(--accent); color: white; border-color: var(--accent); }
+.action-btn.open:hover { opacity: 0.9; }
+.action-btn.stop { color: var(--red); }
+.action-btn.stop:hover { border-color: var(--red); }
+.action-btn.start { color: var(--green); }
+.action-btn.start:hover { border-color: var(--green); }
+.action-btn.remove { color: var(--text-dim); font-size: 11px; padding: 6px 10px; }
+
+.empty { text-align: center; color: var(--text-dim); font-size: 14px; padding: 60px 20px; }
+</style>
+</head>
+<body>
+<div class="hub">
+  <div class="hub-header">
+    <div>
+      <div class="hub-title">CLAUDE-AGILE <span>hub</span></div>
+      <div class="hub-subtitle">Gestiona tus proyectos. Cada uno corre en su propio servidor.</div>
+    </div>
+    <button class="add-btn" onclick="addProject()">+ Agregar Proyecto</button>
+  </div>
+  <div class="projects" id="projects">
+    <div class="empty">Cargando proyectos...</div>
+  </div>
+</div>
+
+<script>
+let projects = [];
+
+async function loadProjects() {
+  try {
+    const r = await fetch('/api/projects');
+    const data = await r.json();
+    projects = data.projects || [];
+    render();
+  } catch(e) { console.error(e); }
+}
+
+function render() {
+  const el = document.getElementById('projects');
+  if (!projects.length) {
+    el.innerHTML = '<div class="empty">Sin proyectos. Agrega uno con el boton de arriba.</div>';
+    return;
+  }
+  el.innerHTML = projects.map(p => {
+    const running = p.running;
+    const cls = running ? 'running' : 'stopped';
+    const modules = p.modules.length ? p.modules.join(', ') : 'sin modulos';
+    return `
+      <div class="project-card ${cls}">
+        <div class="project-info">
+          <div class="project-name">${esc(p.name)}</div>
+          <div class="project-path">${esc(p.path)}</div>
+          <div class="project-meta">
+            <span class="meta-status ${running ? 'on' : 'off'}">${running ? 'Running' : 'Stopped'}</span>
+            <span class="meta-badge meta-port">:${p.port}</span>
+            ${p.branch ? `<span class="meta-badge meta-branch">${esc(p.branch)}</span>` : ''}
+            <span class="meta-badge meta-modules">${esc(modules)}</span>
+          </div>
+        </div>
+        <div class="project-actions">
+          ${running
+            ? `<button class="action-btn open" onclick="window.open('${p.url}','_blank')">Abrir Dashboard</button>
+               <button class="action-btn stop" onclick="stopProject('${p.name}')">Stop</button>`
+            : `<button class="action-btn start" onclick="startProject('${p.name}')">Start</button>`
+          }
+          <button class="action-btn remove" onclick="removeProject('${p.name}')" title="Desvincular">x</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function startProject(name) {
+  await fetch(`/api/projects/${name}/start`, { method: 'POST' });
+  setTimeout(loadProjects, 1500);
+}
+
+async function stopProject(name) {
+  await fetch(`/api/projects/${name}/stop`, { method: 'POST' });
+  loadProjects();
+}
+
+async function removeProject(name) {
+  if (!confirm(`Desvincular "${name}"? (No borra archivos)`)) return;
+  await fetch(`/api/projects/${name}`, { method: 'DELETE' });
+  loadProjects();
+}
+
+async function addProject() {
+  const name = prompt('Nombre del proyecto:');
+  if (!name) return;
+  const path = prompt('Ruta absoluta (ej: /home/omar/mi-proyecto):');
+  if (!path) return;
+  const r = await fetch('/api/projects', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name, path})
+  });
+  const data = await r.json();
+  if (data.error) { alert(data.error); return; }
+  setTimeout(loadProjects, 1500);
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+loadProjects();
+setInterval(loadProjects, 5000);
+</script>
+</body>
+</html>
